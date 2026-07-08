@@ -1,0 +1,2 @@
+{"name":"short_reasoning","prompt":"Solve: if a model generates 24 tokens/sec, how long for 480 tokens?"}
+{"name":"gx10_summary","prompt":"Summarize why local inference on a GX10 is useful for open model experimentation."}
