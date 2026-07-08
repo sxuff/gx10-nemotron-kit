@@ -12,6 +12,12 @@ Reproducible local inference, quick checks, and latency notes for NVIDIA Nemotro
 
 ## Quick Start
 
+Open the screenshot-ready benchmark card:
+
+```bash
+xdg-open reports/benchmark-card.html
+```
+
 Serve the model:
 
 ```bash
