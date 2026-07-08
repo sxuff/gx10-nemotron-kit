@@ -56,7 +56,16 @@ def make_prompt(target_words):
     return base
 
 
-def stream_chat(url, model, prompt, max_tokens, temperature, timeout, session_index):
+def stream_chat(
+    url,
+    model,
+    prompt,
+    max_tokens,
+    temperature,
+    timeout,
+    session_index,
+    force_tokens,
+):
     body = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
@@ -65,6 +74,9 @@ def stream_chat(url, model, prompt, max_tokens, temperature, timeout, session_in
         "stream": True,
         "stream_options": {"include_usage": True},
     }
+    if force_tokens:
+        body["ignore_eos"] = True
+        body["min_tokens"] = max_tokens
     req = urllib.request.Request(
         url,
         data=json.dumps(body).encode(),
@@ -110,7 +122,7 @@ def stream_chat(url, model, prompt, max_tokens, temperature, timeout, session_in
     }
 
 
-def run_group(url, model, prompt, max_tokens, temperature, concurrency, timeout):
+def run_group(url, model, prompt, max_tokens, temperature, concurrency, timeout, force_tokens):
     group_start = time.time()
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as pool:
         futures = [
@@ -123,6 +135,7 @@ def run_group(url, model, prompt, max_tokens, temperature, concurrency, timeout)
                 temperature,
                 timeout,
                 session_index,
+                force_tokens,
             )
             for session_index in range(concurrency)
         ]
@@ -165,9 +178,17 @@ def main():
     parser.add_argument("--max-tokens", type=int, default=1500)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--prompt-words", type=int, default=29)
+    parser.add_argument("--warmup-requests", type=int, default=1)
+    parser.add_argument("--warmup-tokens", type=int, default=128)
+    parser.add_argument(
+        "--allow-eos",
+        action="store_true",
+        help="Let requests stop naturally before max_tokens.",
+    )
     parser.add_argument("--timeout", type=int, default=1800)
     parser.add_argument("--out-dir", default="")
     args = parser.parse_args()
+    force_tokens = not args.allow_eos
 
     run_id = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%SZ")
     out_dir = pathlib.Path(args.out_dir) if args.out_dir else ROOT / "runs" / f"concurrency-{run_id}"
@@ -187,9 +208,24 @@ def main():
         "max_tokens": args.max_tokens,
         "temperature": args.temperature,
         "prompt_words_requested": args.prompt_words,
+        "warmup_requests": args.warmup_requests,
+        "warmup_tokens": args.warmup_tokens,
+        "force_tokens": force_tokens,
         "prompt": prompt,
     }
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
+
+    for warmup_index in range(args.warmup_requests):
+        stream_chat(
+            url=url,
+            model=args.model,
+            prompt=prompt,
+            max_tokens=min(args.warmup_tokens, args.max_tokens),
+            temperature=args.temperature,
+            timeout=args.timeout,
+            session_index=warmup_index,
+            force_tokens=force_tokens,
+        )
 
     with open(output_path, "w") as out:
         for concurrency in metadata["concurrency"]:
@@ -203,6 +239,7 @@ def main():
                     temperature=args.temperature,
                     concurrency=concurrency,
                     timeout=args.timeout,
+                    force_tokens=force_tokens,
                 ),
             }
             line = json.dumps(record)

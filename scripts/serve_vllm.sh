@@ -14,6 +14,17 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 source .env
+container_name="${VLLM_CONTAINER_NAME:-vllm-nemotron-puzzle}"
+
+if docker ps --format '{{.Names}}' | grep -qx "$container_name"; then
+  printf 'Container %s is already running. Stop it first:\n' "$container_name" >&2
+  printf '  docker rm -f %s\n' "$container_name" >&2
+  exit 1
+fi
+
+if docker ps -a --format '{{.Names}}' | grep -qx "$container_name"; then
+  docker rm "$container_name" >/dev/null
+fi
 
 vllm_args=(
   "$MODEL_ID"
@@ -36,7 +47,7 @@ elif [ -n "${MTP_K:-}" ]; then
 fi
 
 docker run --rm -it \
-  --name vllm-nemotron-puzzle \
+  --name "$container_name" \
   --ipc=host \
   --gpus all \
   -p "${PORT:-8000}:8000" \

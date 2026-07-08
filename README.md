@@ -53,6 +53,8 @@ latest_concurrency="$(ls -td runs/concurrency-*/results.jsonl | head -1)"
 ./benchmarks/summarize_concurrency.py "$latest_concurrency"
 ```
 
+By default, this benchmark does one warmup request and forces each session to generate `max_tokens` using vLLM's `ignore_eos` and `min_tokens` request options. Use `--allow-eos` if you want natural stopping behavior.
+
 For higher concurrency, restart the server with a larger sequence cap:
 
 ```bash
@@ -63,4 +65,10 @@ To test native MTP speculative decoding, restart the server with:
 
 ```bash
 MAX_NUM_SEQS=8 MTP_K=3 ./scripts/serve_vllm.sh
+```
+
+If a previous server container is still running, stop it first:
+
+```bash
+docker rm -f vllm-nemotron-puzzle
 ```
