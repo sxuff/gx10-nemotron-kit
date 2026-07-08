@@ -1,4 +1,4 @@
-# MTP k=2 Concurrency Run
+# MTP k=3 Concurrency Runs
 
 Date: 2026-07-08
 
@@ -48,6 +48,6 @@ Summary, repeat run:
 Notes:
 
 - This run completed all 10,500 requested completion tokens at 7 concurrent sessions.
-- vLLM speculative decoding logs showed two draft positions, consistent with `MTP_K=2`.
-- Compared with the earlier `MTP_K=3` crash note, `MTP_K=2` appears more stable on this GX10/vLLM nightly setup for forced long-output concurrency.
+- These runs used `MTP_K=3`.
+- Compared with the earlier crash note, `MTP_K=3` is not a simple always-fails case on this GX10/vLLM nightly setup: one forced long-output concurrency run crashed, while two later runs completed successfully.
 - Across two 7-session runs, cumulative generation throughput was 85.88-88.85 tokens/sec with zero failed sessions.
