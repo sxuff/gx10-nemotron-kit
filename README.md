@@ -1,12 +1,12 @@
 # GX10 Nemotron Kit
 
-Reproducible local inference, smoke tests, and latency notes for NVIDIA Nemotron Labs 3 Puzzle 75B A9B NVFP4 on GX10 / DGX Spark class hardware.
+Reproducible local inference, quick checks, and latency notes for NVIDIA Nemotron Labs 3 Puzzle 75B A9B NVFP4 on GX10 / DGX Spark class hardware.
 
 ## Goals
 
 - Clean GX10 setup notes
 - vLLM serving recipe
-- Smoke tests
+- Quick checks
 - Latency and context-length sweeps
 - Public notes useful to the local AI community
 
@@ -18,10 +18,10 @@ Serve the model:
 ./scripts/serve_vllm.sh
 ```
 
-In a second shell, run a smoke test:
+In a second shell, run a quick chat check:
 
 ```bash
-./scripts/smoke_chat.sh
+./scripts/quick_chat.sh
 ```
 
 Run the benchmark matrix:
