@@ -8,6 +8,7 @@ import socket
 import statistics
 import time
 import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -88,23 +89,49 @@ def stream_chat(
     usage = {}
     finish_reason = None
 
-    with urllib.request.urlopen(req, timeout=timeout) as response:
-        for raw in response:
-            line = raw.decode("utf-8", errors="replace").strip()
-            if not line.startswith("data: "):
-                continue
-            payload = line.removeprefix("data: ").strip()
-            if payload == "[DONE]":
-                break
-            data = json.loads(payload)
-            if data.get("usage"):
-                usage = data["usage"]
-            for choice in data.get("choices", []):
-                finish_reason = choice.get("finish_reason") or finish_reason
-                delta = choice.get("delta") or {}
-                if delta.get("content") or delta.get("reasoning"):
-                    if first_token_at is None:
-                        first_token_at = time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            for raw in response:
+                line = raw.decode("utf-8", errors="replace").strip()
+                if not line.startswith("data: "):
+                    continue
+                payload = line.removeprefix("data: ").strip()
+                if payload == "[DONE]":
+                    break
+                data = json.loads(payload)
+                if data.get("usage"):
+                    usage = data["usage"]
+                for choice in data.get("choices", []):
+                    finish_reason = choice.get("finish_reason") or finish_reason
+                    delta = choice.get("delta") or {}
+                    if delta.get("content") or delta.get("reasoning"):
+                        if first_token_at is None:
+                            first_token_at = time.time()
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")[:2000]
+        return {
+            "session_index": session_index,
+            "elapsed_s": time.time() - start,
+            "ttft_s": first_token_at - start if first_token_at else None,
+            "decode_s": None,
+            "prompt_tokens": None,
+            "completion_tokens": usage.get("completion_tokens") or 0,
+            "total_tokens": usage.get("total_tokens"),
+            "finish_reason": finish_reason,
+            "error": f"HTTP {exc.code}: {body}",
+        }
+    except Exception as exc:
+        return {
+            "session_index": session_index,
+            "elapsed_s": time.time() - start,
+            "ttft_s": first_token_at - start if first_token_at else None,
+            "decode_s": None,
+            "prompt_tokens": None,
+            "completion_tokens": usage.get("completion_tokens") or 0,
+            "total_tokens": usage.get("total_tokens"),
+            "finish_reason": finish_reason,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
 
     end = time.time()
     completion_tokens = usage.get("completion_tokens") or 0
@@ -122,7 +149,17 @@ def stream_chat(
     }
 
 
-def run_group(url, model, prompt, max_tokens, temperature, concurrency, timeout, force_tokens):
+def run_group(
+    url,
+    model,
+    prompt,
+    max_tokens,
+    temperature,
+    concurrency,
+    timeout,
+    force_tokens,
+    fail_fast,
+):
     group_start = time.time()
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as pool:
         futures = [
@@ -145,6 +182,9 @@ def run_group(url, model, prompt, max_tokens, temperature, concurrency, timeout,
 
     completion_tokens = sum(item["completion_tokens"] for item in sessions)
     prompt_tokens = sum(item.get("prompt_tokens") or 0 for item in sessions)
+    errors = [item for item in sessions if item.get("error")]
+    if errors and fail_fast:
+        raise RuntimeError(errors[0]["error"])
     decode_denominator = max((item.get("decode_s") or 0 for item in sessions), default=0)
     cumulative_decode_tok_s = None
     if decode_denominator > 0:
@@ -160,6 +200,9 @@ def run_group(url, model, prompt, max_tokens, temperature, concurrency, timeout,
         "avg_per_session_gen_tok_s": (completion_tokens / group_elapsed) / concurrency,
         "completion_tokens": completion_tokens,
         "prompt_tokens": prompt_tokens,
+        "ok_sessions": len(sessions) - len(errors),
+        "error_sessions": len(errors),
+        "errors": [item["error"] for item in errors],
         "avg_ttft_s": mean(item.get("ttft_s") for item in sessions),
         "p50_ttft_s": percentile((item.get("ttft_s") for item in sessions), 0.50),
         "p90_ttft_s": percentile((item.get("ttft_s") for item in sessions), 0.90),
@@ -184,6 +227,11 @@ def main():
         "--allow-eos",
         action="store_true",
         help="Let requests stop naturally before max_tokens.",
+    )
+    parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Stop on the first failed session instead of recording partial rows.",
     )
     parser.add_argument("--timeout", type=int, default=1800)
     parser.add_argument("--out-dir", default="")
@@ -240,6 +288,7 @@ def main():
                     concurrency=concurrency,
                     timeout=args.timeout,
                     force_tokens=force_tokens,
+                    fail_fast=args.fail_fast,
                 ),
             }
             line = json.dumps(record)

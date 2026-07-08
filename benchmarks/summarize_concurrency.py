@@ -26,8 +26,8 @@ def main():
             baseline = row["cumulative_gen_tok_s"]
             break
 
-    print("| concurrent_sessions | cumulative_gen_tok_s | cumulative_decode_tok_s | avg_per_session_tok_s | avg_ttft_s | scale |")
-    print("|---:|---:|---:|---:|---:|---:|")
+    print("| concurrent_sessions | ok/error | cumulative_gen_tok_s | cumulative_decode_tok_s | avg_per_session_tok_s | avg_ttft_s | scale |")
+    print("|---:|---:|---:|---:|---:|---:|---:|")
     for row in sorted(rows, key=lambda item: item["concurrent_sessions"]):
         scale = None if not baseline else row["cumulative_gen_tok_s"] / baseline
         print(
@@ -35,6 +35,7 @@ def main():
             + " | ".join(
                 [
                     str(row["concurrent_sessions"]),
+                    f"{row.get('ok_sessions', '-')}/{row.get('error_sessions', 0)}",
                     fmt(row.get("cumulative_gen_tok_s")),
                     fmt(row.get("cumulative_decode_tok_s")),
                     fmt(row.get("avg_per_session_gen_tok_s")),
