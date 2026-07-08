@@ -40,6 +40,14 @@ if [ -n "${API_SERVER_COUNT:-}" ]; then
   vllm_args+=(--api-server-count "$API_SERVER_COUNT")
 fi
 
+if [ -n "${ATTENTION_BACKEND:-}" ]; then
+  vllm_args+=(--attention-backend "$ATTENTION_BACKEND")
+fi
+
+if [ -n "${ATTENTION_CONFIG:-}" ]; then
+  vllm_args+=(--attention-config "$ATTENTION_CONFIG")
+fi
+
 if [ -n "${SPECULATIVE_CONFIG:-}" ]; then
   vllm_args+=(--speculative-config "$SPECULATIVE_CONFIG")
 elif [ -n "${MTP_K:-}" ]; then
