@@ -1,7 +1,6 @@
 .env
 .venv/
-runs/*
-!runs/.gitkeep
+runs/
 __pycache__/
 *.pyc
 .cache/

@@ -10,13 +10,11 @@ Reproducible local inference, quick checks, and latency notes for NVIDIA Nemotro
 - Latency and context-length sweeps
 - Public notes useful to the local AI community
 
+## What This Provides
+
+This repo is a reproducible GX10 runbook for serving and benchmarking Nemotron Puzzle locally. It keeps setup commands, vLLM launch flags, quick API checks, benchmark scripts, result summarizers, and short notes about observed compatibility issues. It does not track model weights, local `.env` files, raw run outputs, screenshots, or generated presentation assets.
+
 ## Quick Start
-
-Open the screenshot-ready benchmark card:
-
-```bash
-xdg-open reports/benchmark-card.html
-```
 
 Serve the model:
 
