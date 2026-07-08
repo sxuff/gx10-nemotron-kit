@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if ! docker info >/dev/null 2>&1; then
+  current_user="$(id -un)"
+  if getent group docker | grep -qE "(:|,)${current_user}(,|$)"; then
+    printf 'Docker is available through the docker group; re-running with sg docker.\n' >&2
+    printf -v quoted '%q ' "$0" "$@"
+    exec sg docker -c "$quoted"
+  fi
+
+  printf 'Docker is not accessible. Reconnect SSH or add %s to the docker group.\n' "$current_user" >&2
+  exit 1
+fi
+
 source .env
 
 docker run --rm -it \
