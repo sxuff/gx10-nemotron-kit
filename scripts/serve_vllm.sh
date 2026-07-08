@@ -23,7 +23,7 @@ docker run --rm -it \
   -e HF_TOKEN="$HF_TOKEN" \
   -v "${HF_HOME:-$HOME/.cache/huggingface}:/root/.cache/huggingface" \
   vllm/vllm-openai:cu130-nightly \
-  vllm serve "$MODEL_ID" \
+  "$MODEL_ID" \
     --served-model-name "${SERVED_MODEL_NAME:-nemotron-puzzle-75b-nvfp4}" \
     --trust-remote-code \
     --max-model-len 131072 \
