@@ -15,6 +15,7 @@ Result:
 - MTP improved cumulative throughput versus no MTP.
 - A forced long-output run failed at higher concurrency with a fatal EngineCore error.
 - The failure occurred with 4 running requests after each had generated roughly 1.2k-1.4k output tokens.
+- A later `MTP_K=2` run completed successfully; see `docs/mtp-k2-concurrency-run.md`.
 
 Primary failure signature:
 
@@ -65,4 +66,3 @@ If a run fails, preserve the container logs before removing the container:
 ```bash
 docker logs vllm-nemotron-puzzle > runs/vllm-failure.log 2>&1
 ```
-
