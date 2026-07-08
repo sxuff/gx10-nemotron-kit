@@ -1,0 +1,2 @@
+{"name":"local_inference_summary","prompt":"Summarize the practical value of serving a large open model locally on a GX10. Focus on reproducibility, privacy, latency, and experimentation."}
+{"name":"short_math","prompt":"Solve step by step: a benchmark produces 16 completion tokens per second. How long should 512 completion tokens take, and what caveats might make the measured time differ?"}
