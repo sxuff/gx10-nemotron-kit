@@ -15,6 +15,26 @@ fi
 
 source .env
 
+vllm_args=(
+  "$MODEL_ID"
+  --served-model-name "${SERVED_MODEL_NAME:-nemotron-puzzle-75b-nvfp4}"
+  --trust-remote-code
+  --max-model-len "${MAX_MODEL_LEN:-131072}"
+  --gpu-memory-utilization "${GPU_MEMORY_UTILIZATION:-0.85}"
+  --max-num-seqs "${MAX_NUM_SEQS:-2}"
+  --reasoning-parser nemotron_v3
+)
+
+if [ -n "${API_SERVER_COUNT:-}" ]; then
+  vllm_args+=(--api-server-count "$API_SERVER_COUNT")
+fi
+
+if [ -n "${SPECULATIVE_CONFIG:-}" ]; then
+  vllm_args+=(--speculative-config "$SPECULATIVE_CONFIG")
+elif [ -n "${MTP_K:-}" ]; then
+  vllm_args+=(--speculative-config "{\"method\":\"mtp\",\"num_speculative_tokens\":${MTP_K}}")
+fi
+
 docker run --rm -it \
   --name vllm-nemotron-puzzle \
   --ipc=host \
@@ -23,10 +43,4 @@ docker run --rm -it \
   -e HF_TOKEN="$HF_TOKEN" \
   -v "${HF_HOME:-$HOME/.cache/huggingface}:/root/.cache/huggingface" \
   vllm/vllm-openai:cu130-nightly \
-  "$MODEL_ID" \
-    --served-model-name "${SERVED_MODEL_NAME:-nemotron-puzzle-75b-nvfp4}" \
-    --trust-remote-code \
-    --max-model-len 131072 \
-    --gpu-memory-utilization 0.85 \
-    --max-num-seqs 2 \
-    --reasoning-parser nemotron_v3
+  "${vllm_args[@]}"

@@ -44,3 +44,23 @@ Summarize a run:
 latest_results="$(ls -td runs/matrix-*/results.jsonl | head -1)"
 ./benchmarks/summarize_results.py "$latest_results"
 ```
+
+Run a cumulative throughput test:
+
+```bash
+./benchmarks/run_concurrency.py --concurrency 1,2,4,7 --max-tokens 1500 --prompt-words 29
+latest_concurrency="$(ls -td runs/concurrency-*/results.jsonl | head -1)"
+./benchmarks/summarize_concurrency.py "$latest_concurrency"
+```
+
+For higher concurrency, restart the server with a larger sequence cap:
+
+```bash
+MAX_NUM_SEQS=8 ./scripts/serve_vllm.sh
+```
+
+To test native MTP speculative decoding, restart the server with:
+
+```bash
+MAX_NUM_SEQS=8 MTP_K=3 ./scripts/serve_vllm.sh
+```
