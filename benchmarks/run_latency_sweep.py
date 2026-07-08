@@ -23,7 +23,15 @@ def post(prompt):
         data = json.loads(r.read().decode())
     elapsed = time.time() - start
     usage = data.get("usage", {})
-    return {"elapsed_s": elapsed, "usage": usage}
+    completion_tokens = usage.get("completion_tokens")
+    tokens_per_s = None
+    if completion_tokens is not None and elapsed > 0:
+        tokens_per_s = completion_tokens / elapsed
+    return {
+        "elapsed_s": elapsed,
+        "completion_tokens_per_s": tokens_per_s,
+        "usage": usage,
+    }
 
 with open(PROMPTS) as f:
     for line in f:
