@@ -54,6 +54,8 @@ elif [ -n "${MTP_K:-}" ]; then
   vllm_args+=(--speculative-config "{\"method\":\"mtp\",\"num_speculative_tokens\":${MTP_K}}")
 fi
 
+vllm_args+=("$@")
+
 docker run --rm -it \
   --name "$container_name" \
   --ipc=host \
